@@ -958,7 +958,7 @@
         } catch(err) { alert("Clipboard read failed. Ensure browser permissions are granted."); }
     }
 
-        function exportToClipboard(type) {
+            function exportToClipboard(type) {
         if(currentDeck.length === 0) return alert("Deck empty!");
         let text = "";
         if (type === 'ydk') {
@@ -966,16 +966,9 @@
             currentDeck.forEach(c => {
                 const l = [];
                 for(let i=0; i<c.qty; i++) l.push(c.id || c.name);
-                if(c.typeGroup==='Extra') e += l.join('
-')+'
-'; else m += l.join('
-')+'
-';
+                if(c.typeGroup==='Extra') e += l.join('\n')+'\n'; else m += l.join('\n')+'\n';
             });
-            text = `#main
-${m}#extra
-${e}!side
-`;
+            text = `#main\n${m}#extra\n${e}!side\n`;
         }
         
         function fallbackCopy(str) {

@@ -6,157 +6,62 @@
   <title>GeNeRsys Deck Builder</title>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #0f172a; --panel: #1e293b; --border: #334155; --text: #f8fafc;
-      --muted: #94a3b8; --accent: #38bdf8; --accent-hover: #0284c7; 
-      --success: #22c55e; --warning: #f59e0b; --danger: #ef4444;
-      --monster: #ff8b53; --spell: #1d9e74; --trap: #bc5a84; --extra: #8b5cf6;
-    }
+    :root { --bg: #0f172a; --panel: #1e293b; --border: #334155; --text: #f8fafc; --muted: #94a3b8; --accent: #38bdf8; --accent-hover: #0284c7; --success: #22c55e; --warning: #f59e0b; --danger: #ef4444; --monster: #ff8b53; --spell: #1d9e74; --trap: #bc5a84; --extra: #8b5cf6; }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
-
-    /* Custom Scrollbar Styling */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-    * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
-
     body { background: var(--bg); color: var(--text); padding: 10px; line-height: 1.4; font-size: 13px; height: 100vh; overflow: hidden; }
-    
     .header { margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
     h1 { font-size: 1.4rem; color: var(--accent); margin: 0; }
-    
     .layout { display: flex; gap: 12px; height: calc(100vh - 65px); }
-    
     .left-column { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; overflow: hidden; padding-right: 4px; }
     .main-column { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow-y: auto; padding-bottom: 20px; }
-    
     .card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 10px; }
-    
-    input[type="text"], input[type="number"], select, textarea {
-      width: 100%; background: #0b1120; border: 1px solid var(--border); color: var(--text);
-      padding: 6px 8px; border-radius: 4px; font-size: 0.85rem; outline: none;
-    }
+    input[type="text"], input[type="number"], select, textarea { width: 100%; background: #0b1120; border: 1px solid var(--border); color: var(--text); padding: 6px 8px; border-radius: 4px; font-size: 0.85rem; outline: none; }
     input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-    button {
-      background: var(--accent); color: #0f172a; font-weight: 600; border: none;
-      padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: 0.15s;
-      white-space: nowrap;
-    }
+    button { background: var(--accent); color: #0f172a; font-weight: 600; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: 0.15s; white-space: nowrap; }
     button:hover { background: var(--accent-hover); color: #fff; }
     button.secondary { background: #334155; color: var(--text); }
     button.secondary:hover { background: #475569; }
     button.danger { background: var(--danger); color: #fff; }
     button.icon-btn { width: 22px; height: 22px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; line-height: 1; border-radius: 4px; background: rgba(0,0,0,0.2) !important; color: var(--control-color, #0f172a) !important; margin: 0 2px; } button.icon-btn:hover { background: rgba(0,0,0,0.4) !important; }
-    
     .row { display: flex; gap: 8px; align-items: center; }
     .col { display: flex; flex-direction: column; gap: 6px; }
-    
     .autocomplete-container { position: relative; width: 100%; }
     .autocomplete-list { position: absolute; z-index: 100; top: 100%; left: 0; right: 0; background: var(--panel); border: 1px solid var(--accent); border-radius: 4px; max-height: 250px; overflow-y: auto; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.6); margin-top: 2px; }
     .autocomplete-item { padding: 8px 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #0b1120; font-size: 0.85rem; }
     .autocomplete-item:hover { background: #0b1120; }
-    
     .card-type { font-size: 0.8rem; color: var(--muted); font-style: italic; margin-bottom: 6px; line-height: 1.3; }
     .card-effect { font-size: 0.85rem; background: #0b1120; padding: 10px; border-radius: 4px; border: 1px solid var(--border); white-space: pre-wrap; flex: 1; min-height: 0; overflow-y: auto; }
-    
     .action-bar { background: #0b1120; border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     .budget-val { font-size: 1.6rem; font-weight: bold; color: var(--success); }
     .budget-val.over { color: var(--danger); }
-    
-    .deck-flow-container {
-        column-count: 4;
-        column-gap: 12px;
-        column-fill: auto;
-        padding-right: 4px;
-    }
+    .deck-flow-container { column-count: 4; column-gap: 12px; column-fill: auto; padding-right: 4px; }
     @media (max-width: 1200px) { .deck-flow-container { column-count: 2; } }
-    
-    .deck-grid-container {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-        align-items: start;
-        flex: 1;
-        min-height: 0;
-        height: 100%;
-        overflow-y: auto;
-        overflow-x: hidden;
-    }
+    .deck-grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; align-items: start; flex: 1; min-height: 0; height: 100%; overflow-y: auto; overflow-x: hidden; }
     @media (max-width: 1200px) { .deck-grid-container { grid-template-columns: repeat(2, 1fr); } }
-    
-    .deck-section {
-        background: #0b1120;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .flow-header {
-        break-after: avoid;
-        break-inside: avoid;
-        background: #0b1120;
-        border: 1px solid var(--border);
-        border-bottom: none;
-        border-radius: 6px 6px 0 0;
-        margin-top: 0;
-        overflow: hidden;
-        height: 30px;
-        box-sizing: border-box;
-    }
-    .deck-grid-container .flow-header {
-        border: none; border-radius: 0;
-    }
+    .deck-section { background: #0b1120; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
+    .flow-header { break-after: avoid; break-inside: avoid; background: #0b1120; border: 1px solid var(--border); border-bottom: none; border-radius: 6px 6px 0 0; margin-top: 0; overflow: hidden; height: 30px; box-sizing: border-box; }
+    .deck-grid-container .flow-header { border: none; border-radius: 0; }
     .flow-header h3 { padding: 0 8px; margin: 0; height: 29px; font-size: 0.9rem; color: #fff; display: flex; justify-content: space-between; align-items: center; }
-    
     .h-monster { background: rgba(255, 139, 83, 0.2); border-bottom: 2px solid var(--monster); color: var(--monster) !important; }
     .h-spell { background: rgba(29, 158, 116, 0.2); border-bottom: 2px solid var(--spell); color: var(--spell) !important; }
     .h-trap { background: rgba(188, 90, 132, 0.2); border-bottom: 2px solid var(--trap); color: var(--trap) !important; }
     .h-extra { background: rgba(139, 92, 246, 0.2); border-bottom: 2px solid var(--extra); color: var(--extra) !important; }
-    
-    .card-row { 
-        break-inside: avoid;
-        display: flex; align-items: center; padding: 0 6px; 
-        background: var(--row-bg, #0b1120); 
-        color: var(--row-color, var(--text));
-        border-left: 1px solid var(--border);
-        border-right: 1px solid var(--border);
-        border-bottom: 1px solid #1e293b; 
-        transition: 0.1s;
-        height: 30px;
-        box-sizing: border-box;
-        cursor: pointer;
-        user-select: none; -webkit-user-select: none;
-    }
-    .deck-grid-container .card-row {
-        border-left: none; border-right: none;
-    }
+    .card-row { break-inside: avoid; display: flex; align-items: center; padding: 0 6px; background: var(--row-bg, #0b1120); color: var(--row-color, var(--text)); border-left: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid #1e293b; transition: 0.1s; height: 30px; box-sizing: border-box; cursor: pointer; user-select: none; -webkit-user-select: none; }
+    .deck-grid-container .card-row { border-left: none; border-right: none; }
     .card-row:hover { filter: brightness(1.2); }
-    .card-row.last-row {
-        border-bottom: 1px solid var(--border);
-        border-radius: 0 0 6px 6px;
-    }
-    .deck-grid-container .card-row.last-row {
-        border-bottom: none; border-radius: 0;
-    }
-    
+    .card-row.last-row { border-bottom: 1px solid var(--border); border-radius: 0 0 6px 6px; }
+    .deck-grid-container .card-row.last-row { border-bottom: none; border-radius: 0; }
     .card-name { flex: 1; margin-left: 8px; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: 0.1s; font-family: 'Oswald', sans-serif; font-weight: 700; letter-spacing: 0.5px; }
     .card-name:hover { text-decoration: underline; }
     .card-pts { font-weight: bold; font-size: 0.85rem; width: 30px; text-align: center; background: #f9cb9c; color: #0f172a !important; border-radius: 4px; padding: 2px 0; margin-left: 4px; }
     .qty-controls { display: flex; align-items: center; gap: 2px; background: transparent; padding: 2px 0; }
     .qty-num { width: 14px; text-align: center; font-weight: bold; font-size: 0.85rem; color: var(--control-color, #0f172a); }
-    
-    
-    
-    
-    
-  
-    
     #deckTextContainer { display: none; }
     #deckImageContainer { display: flex; flex-direction: column; overflow-y: auto; flex: 1; min-height: 0; padding-right: 12px; }
-    
     .img-deck-section { margin-bottom: 6px; }
     .img-deck-header { font-size: 1rem; color: #f8fafc; margin: 0 0 6px 0; font-weight: bold; border-bottom: 1px solid var(--border); padding-bottom: 4px;}
     .img-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
@@ -164,23 +69,18 @@
     .card-img-wrapper:hover:not(.sortable-drag):not(.sortable-ghost) { transform: scale(1.08); z-index: 10; }
     .card-img-wrapper img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 4px; }
     .card-img-pts { position: absolute; top: 0; right: 0; background: #f9cb9c; color: #0f172a; font-weight: bold; font-size: 0.8rem; padding: 1px 6px; border-bottom-left-radius: 4px; border-top-right-radius: 4px; z-index: 5; border-left: 2px solid #0f172a; border-bottom: 2px solid #0f172a; }
-
     @media (max-width: 900px) {
         .action-bar { flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; }
         .action-bar > div { flex: none !important; width: 100% !important; max-width: 100% !important; justify-content: space-between; }
         .action-bar .row { flex-wrap: wrap; justify-content: center; }
         #screenshotName { text-align: left; }
-
         body { height: auto; overflow: auto; }
         .layout { flex-direction: column; height: auto; }
         .left-column { width: 100%; height: auto; overflow: visible; }
         .main-column { height: auto; overflow: visible; }
-        
         #deckImageContainer { display: none !important; }
         #deckTextContainer { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; height: auto !important; overflow: visible !important; flex: 1; min-height: 0; }
         .deck-flow-container { column-count: 2 !important; height: auto !important; }
-        
-        /* Lock card effect box height on mobile to prevent UI jumping */
         .card-effect { flex: none !important; height: 160px !important; }
         #cardImgBox { min-height: 260px; display: flex; align-items: center; justify-content: center; }
     }
@@ -188,21 +88,17 @@
         #deckTextContainer { grid-template-columns: 1fr !important; }
         .deck-flow-container { column-count: 1 !important; }
     }
-
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 </head>
 <body>
-
+<body>
   <div class="header">
     <h1><span style="color:#f8fafc">Ge</span><span style="color:#94a3b8">N</span><span style="color:#f8fafc">e</span><span style="color:#38bdf8">R</span><span style="color:#f8fafc">sys</span> Deck Builder</h1>
   </div>
-
   <div class="layout">
-    
     <div class="left-column">
-      
       <div class="card" style="padding: 8px 12px; margin-bottom: 0; display: flex; align-items: center; height: 48px;">
         <div class="row" style="margin-bottom: 0;">
           <select id="io_action_type" onchange="toggleIO()" style="font-size:0.8rem; padding: 4px 6px;">
@@ -220,9 +116,7 @@
           <button id="ioBtn" onclick="executeIO()" style="padding: 4px 10px; width: 50px; font-size: 0.8rem;">Go</button>
         </div>
         <input type="file" id="ydkFileInput" accept=".ydk,.txt" style="display:none;" onchange="importYDKFile(event)" />
-        
       </div>
-
       <div class="card" style="flex: 1; display: flex; flex-direction: column; padding: 12px 10px;">
         <div id="cardHeaderBox" style="display:none; flex-direction: column; margin-bottom: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
@@ -231,26 +125,19 @@
           </div>
           <div id="vType" class="card-type" style="margin-bottom: 0;">Spell Card</div>
         </div>
-        
         <div id="cardImgBox" style="text-align: center; margin-bottom: 10px; display: none;">
           <div style="position: relative; display: inline-block;">
             <img id="cardImg" style="max-width: 100%; max-height: 260px; border-radius: 4px; display: block;" src="" alt="Card Art" />
             <div id="vPtsDisplay" style="position: absolute; top: -10px; right: -10px; background: #f9cb9c; color: #0f172a; font-weight: bold; font-size: 1.1rem; padding: 2px 8px; border-radius: 6px; border: 2px solid #0f172a; box-shadow: 0 2px 6px rgba(0,0,0,0.8); z-index: 10;">-</div>
           </div>
         </div>
-
         <div id="cardInfoBox" style="display:none; flex-direction: column; flex: 1; min-height: 0;">
           <div id="vEffect" class="card-effect">Effect text...</div>
         </div>
       </div>
-
     </div>
-
     <div class="main-column">
-      
       <div class="action-bar" style="margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; gap: 12px;">
-        
-        <!-- 1. Search Bar & Uniform Buttons Next to It -->
         <div class="row" style="gap: 8px; flex-shrink: 0; align-items: center;">
           <div style="width: 280px; flex-shrink: 0;">
             <div class="autocomplete-container">
@@ -258,7 +145,6 @@
               <div id="addCardDropdown" class="autocomplete-list"></div>
             </div>
           </div>
-          
           <div class="row" style="gap: 4px;">
             <button id="undoBtn" class="secondary" onclick="undo()" style="width: 58px; height: 36px; padding: 0; opacity: 0.5;" disabled>Undo</button>
             <button id="redoBtn" class="secondary" onclick="redo()" style="width: 58px; height: 36px; padding: 0; opacity: 0.5;" disabled>Redo</button>
@@ -266,85 +152,35 @@
             <button class="danger" onclick="clearDeck()" style="width: 58px; height: 36px; padding: 0;">Clear</button>
           </div>
         </div>
-
-        <!-- 2. Centered Deck Name Box -->
         <div style="flex: 1; max-width: 240px; text-align: center;">
             <input type="text" id="screenshotName" placeholder="Deck Name" style="width: 100%; text-align: center; background: transparent; border: 1px dashed var(--border); color: #ffffff; font-weight: bold; font-size: 1.05rem; padding: 6px; font-family: 'Oswald', sans-serif; letter-spacing: 0.5px; height: 36px;" />
         </div>
-
-        <!-- 3. Balanced Stats Box on Far Right -->
         <div id="uiStatsBox" class="row" style="gap: 14px; background: #0f172a; padding: 0 14px; border-radius: 4px; border: 1px solid var(--border); height: 36px; flex-shrink: 0; align-items: center;">
             <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600;">
                <span style="color: var(--muted); font-weight: 400; font-size: 0.8rem;">Main</span> <span id="mainDeckCount" style="color: var(--text);">0</span>
                <span style="color: var(--border); font-weight: 300; margin: 0 2px;">|</span>
                <span style="color: var(--muted); font-weight: 400; font-size: 0.8rem;">Extra</span> <span id="extraDeckCount" style="color: var(--text);">0</span>
             </div>
-            
             <div style="display: flex; align-items: center; gap: 8px; border-left: 1px solid var(--border); padding-left: 12px; height: 22px; font-size: 0.85rem; font-weight: 600;">
                <span style="color: var(--muted); font-weight: 400; font-size: 0.8rem;">Pts</span> <span class="budget-val" id="totalDeckPts" style="font-size: 0.95rem; line-height: 1;">0</span>
             </div>
         </div>
-
-      </div><div id="deckWrapper"  style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+      </div>
+      <div id="deckWrapper"  style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
         <div id="deckTextContainer" class="deck-grid-container"></div>
         <div id="deckImageContainer"></div>
       </div>
     </div>
   </div>
-
   <script>
     const MAX_POINTS = 100;
     const PUBLISHED_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRBBvbju5SU2VPd4jwZ4MARVWVEkfP49nCUEeoc6PgOOB2KlGpzOwP-5iZYkgTL71OghVYeSwLdGEC7/pub?output=csv"; 
-
     const HARDCODED_DB = {};
-
     let cardDB = {};
-    let cardSearchArray = []; // Optimization: Pre-normalized array for instant search
+    let cardSearchArray = []; 
     let currentDeck = []; 
     let deckHistory = [];
     let historyIndex = -1;
-    const cardImageCache = {};
-
-    function preloadCardImage(id) {
-        if (!id) return Promise.resolve(null);
-        if (cardImageCache[id]) return cardImageCache[id].promise;
-        
-        const entry = { img: null, objectUrl: null, promise: null };
-        const rawUrl = `https://images.ygoprodeck.com/images/cards/${id}.jpg`;
-        const nakedUrl = `images.ygoprodeck.com/images/cards/${id}.jpg`;
-        const proxies = [
-            `https://wsrv.nl/?url=${encodeURIComponent(nakedUrl)}&w=250&we`,
-            `https://corsproxy.io/?${encodeURIComponent(rawUrl)}`,
-            `https://api.allorigins.win/raw?url=${encodeURIComponent(rawUrl)}`
-        ];
-
-        entry.promise = (async () => {
-            for (const proxyUrl of proxies) {
-                try {
-                    const res = await fetch(proxyUrl, { cache: 'force-cache' });
-                    if (!res.ok) continue;
-                    const blob = await res.blob();
-                    if (!blob || blob.size < 500) continue;
-                    const objUrl = URL.createObjectURL(blob);
-                    const loadedImg = await new Promise((resolve, reject) => {
-                        const img = new Image();
-                        img.onload = () => resolve(img);
-                        img.onerror = reject;
-                        img.src = objUrl;
-                    });
-                    entry.img = loadedImg;
-                    entry.objectUrl = objUrl;
-                    return loadedImg;
-                } catch (e) {
-                    // try next proxy
-                }
-            }
-            return null;
-        })();
-
-        cardImageCache[id] = entry;
-        return entry.promise;
-    }
 
     function saveState() {
         if (historyIndex < deckHistory.length - 1) {
@@ -431,26 +267,21 @@
 
     function findPointValue(queryName) {
       const nq = normalize(queryName);
-      // Fast O(1) or optimized array search
       const exact = cardSearchArray.find(c => c.norm === nq);
       if (exact) return { name: exact.name, pts: exact.pts };
-      
       const partial = cardSearchArray.find(c => c.norm.includes(nq) || nq.includes(c.norm));
       if (partial) return { name: partial.name, pts: partial.pts };
-      
       return { name: queryName, pts: 0, missing: true };
     }
 
     function toggleIO() {
        const val = document.getElementById('io_action_type').value;
        const isExport = val.startsWith('export');
-       
        document.getElementById('ioBtn').className = isExport ? 'secondary' : '';
     }
 
     async function executeIO() {
        const val = document.getElementById('io_action_type').value;
-       
        if (val === 'import_file') {
            document.getElementById('ydkFileInput').click();
        } else if (val === 'import_clip') {
@@ -479,9 +310,7 @@
                 const ptsBadge = pts > 0 ? `<div class="card-pts" style="margin-left: 0;">${pts}</div>` : '';
                 div.innerHTML = `<span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; padding-right: 8px;">${escapeHtml(name)}</span> ${ptsBadge}`;
                 div.onclick = async () => {
-                    // Do NOT clear input or hide dropdown so user can click repeatedly
                     document.getElementById('viewerStatus').textContent = "Adding...";
-                    
                     try {
                         const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(name)}`);
                         const data = await res.json();
@@ -511,10 +340,6 @@
             renderDropdown(cardSearchArray.slice(0, 50).map(c => c.name));
         }
 
-        
-        
-        
-
         inputEl.addEventListener('focus', () => {
             if(inputEl.value.trim() === '') showLocalSorted();
             else inputEl.dispatchEvent(new Event('input'));
@@ -533,7 +358,6 @@
             }
             
             const normQ = normalize(val);
-            // Accelerated Search Algorithm
             const localMatches = cardSearchArray
                 .filter(c => c.norm.includes(normQ))
                 .sort((a, b) => {
@@ -559,14 +383,11 @@
 
     async function fetchCardData(cardQuery) {
         document.getElementById('viewerStatus').textContent = "Loading...";
-        
-        // Dim the panels instead of hiding them to prevent UI jumping on mobile
         if (document.getElementById('cardInfoBox').style.display !== 'none') {
             document.getElementById('cardHeaderBox').style.opacity = '0.5';
             document.getElementById('cardImgBox').style.opacity = '0.5';
             document.getElementById('cardInfoBox').style.opacity = '0.5';
         }
-
         try {
             const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(cardQuery)}`);
             const data = await res.json();
@@ -575,7 +396,6 @@
                 let card = data.data[0];
                 const nQuery = normalize(cardQuery);
                 for(let c of data.data) { if(normalize(c.name) === nQuery) { card = c; break; } }
-
                 document.getElementById('vName').textContent = card.name;
                 
                 let typeStr = card.type;
@@ -583,20 +403,13 @@
                 if(card.attribute) typeStr += ` | ${card.attribute}`;
                 
                 const cType = card.type.toLowerCase();
-                if (cType.includes("xyz") && card.level) {
-                    typeStr += ` | Rank ${card.level}`;
-                } else if (cType.includes("link") && card.linkval) {
-                    typeStr += ` | Link ${card.linkval}`;
-                } else if (card.level) {
-                    typeStr += ` | Level ${card.level}`;
-                }
+                if (cType.includes("xyz") && card.level) typeStr += ` | Rank ${card.level}`;
+                else if (cType.includes("link") && card.linkval) typeStr += ` | Link ${card.linkval}`;
+                else if (card.level) typeStr += ` | Level ${card.level}`;
                 
                 if (card.atk !== undefined) {
-                    if (cType.includes("link")) {
-                        typeStr += ` | ATK ${card.atk}`;
-                    } else {
-                        typeStr += ` | ATK ${card.atk} / DEF ${card.def}`;
-                    }
+                    if (cType.includes("link")) typeStr += ` | ATK ${card.atk}`;
+                    else typeStr += ` | ATK ${card.atk} / DEF ${card.def}`;
                 }
                 
                 document.getElementById('vType').textContent = typeStr;
@@ -642,13 +455,13 @@
         document.getElementById('vType').textContent = "Local Entry";
         document.getElementById('vEffect').textContent = "Text unavailable.";
         const pVal = match.missing ? 0 : match.pts;
-                const pBadge = document.getElementById('vPtsDisplay');
-                if (pVal > 0) {
-                    pBadge.textContent = pVal;
-                    pBadge.style.display = 'block';
-                } else {
-                    pBadge.style.display = 'none';
-                }
+        const pBadge = document.getElementById('vPtsDisplay');
+        if (pVal > 0) {
+            pBadge.textContent = pVal;
+            pBadge.style.display = 'block';
+        } else {
+            pBadge.style.display = 'none';
+        }
         document.getElementById('cardImgBox').style.display = 'none';
         document.getElementById('cardHeaderBox').style.display = 'flex';
         document.getElementById('cardHeaderBox').style.opacity = '1';
@@ -665,7 +478,6 @@
     }
 
     function addCardToDeckData(name, id, group, pts, rawType, skipSave = false, isMissing = false) {
-      if (id) preloadCardImage(id);
       const counts = getDeckCounts();
       const existing = currentDeck.find(c => c.name === name);
       
@@ -680,7 +492,6 @@
           const isMissing = pts === 0 && !cardSearchArray.some(cs => cs.name === name && cs.pts === 0);
           currentDeck.push({ name, id, typeGroup: group, qty: 1, pts, rawType: rawType || 'Unknown', isMissing });
       }
-      
       if(!skipSave) {
           saveState();
           renderDeck();
@@ -691,16 +502,13 @@
         const name = decodeURIComponent(encodedName);
         const idx = currentDeck.findIndex(c => c.name === name);
         if(idx === -1) return;
-        
         const card = currentDeck[idx];
         const counts = getDeckCounts();
-        
         if (delta > 0) {
             if (card.qty >= 3) return;
             if(card.typeGroup === 'Extra' && counts.extraCount >= 15) return;
             if(card.typeGroup !== 'Extra' && counts.mainCount >= 60) return;
         }
-        
         card.qty += delta;
         if(card.qty <= 0) currentDeck.splice(idx, 1);
         saveState();
@@ -724,7 +532,6 @@
                 const order = { 'Monster': 1, 'Spell': 2, 'Trap': 3, 'Extra': 4 };
                 return (order[a.typeGroup] || 5) - (order[b.typeGroup] || 5);
             }
-            // If both are in the Extra deck, sort by extra sub-types first (Fusion -> Synchro -> Xyz -> Link)
             if (a.typeGroup === 'Extra' && b.typeGroup === 'Extra') {
                 const subA = getExtraSubtypeOrder(a.rawType);
                 const subB = getExtraSubtypeOrder(b.rawType);
@@ -752,21 +559,18 @@
         return { bg: '#0b1120', text: 'var(--text)', controls: '#0f172a' };
     }
 
-            function renderDeck() {
+    function renderDeck() {
         const groups = { Monster: [], Spell: [], Trap: [], Extra: [] };
         let mainCount = 0, extraCount = 0, totalPts = 0;
-        
         let expandedMain = [];
         let expandedExtra = [];
 
         currentDeck.forEach(c => {
             if(groups[c.typeGroup]) groups[c.typeGroup].push(c);
             else groups.Monster.push(c);
-            
             const subtotal = c.qty * c.pts;
             totalPts += subtotal;
             if(c.typeGroup === 'Extra') extraCount += c.qty; else mainCount += c.qty;
-            
             for(let i = 0; i < c.qty; i++) {
                 if(c.typeGroup === 'Extra') expandedExtra.push(c);
                 else expandedMain.push(c);
@@ -774,22 +578,17 @@
         });
 
         const ptsEl = document.getElementById('totalDeckPts');
-        
         ptsEl.textContent = totalPts;
-        
         if(totalPts > MAX_POINTS) { ptsEl.classList.add('over'); } else { ptsEl.classList.remove('over'); }
-
         document.getElementById('mainDeckCount').textContent = mainCount;
         document.getElementById('extraDeckCount').textContent = extraCount;
 
-        // 1. Build TEXT Container
         const textContainer = document.getElementById('deckTextContainer');
         let textHtml = '';
         
         const renderGridGroup = (arr, title, titleClass, countId) => {
             const count = arr.reduce((acc, c) => acc + c.qty, 0);
-            let groupHtml = `<div class="deck-section">
-                                <div class="flow-header" style="border:none; border-radius:0;"><h3 class="${titleClass}">${title} <span id="${countId}">${count}</span></h3></div>`;
+            let groupHtml = `<div class="deck-section"><div class="flow-header" style="border:none; border-radius:0;"><h3 class="${titleClass}">${title} <span id="${countId}">${count}</span></h3></div>`;
             if (arr.length === 0) {
                 groupHtml += `<div class="card-row last-row" style="border:none; border-radius:0; justify-content:center; color:var(--muted); font-size:0.75rem; font-style:italic; --row-bg: #0b1120;">Empty</div>`;
             } else {
@@ -820,12 +619,11 @@
         renderGridGroup(groups.Extra, 'Extra', 'h-extra', 'count-extra');
         textContainer.innerHTML = textHtml;
         
-        // 2. Build IMAGE Container
         const imageContainer = document.getElementById('deckImageContainer');
         const renderImgCard = (c) => {
             const encodedName = encodeURIComponent(c.name);
             const ptsBadge = c.isMissing ? `<div class="card-img-pts" style="background:transparent; border:none; box-shadow:none; font-size:1.4rem; top:-6px; right:-2px; padding:0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));">🚫</div>` : (c.pts && c.pts > 0 ? `<div class="card-img-pts">${c.pts}</div>` : '');
-            const imgSrc = c.id ? (cardImageCache[c.id] && cardImageCache[c.id].objectUrl ? cardImageCache[c.id].objectUrl : `https://images.ygoprodeck.com/images/cards/${c.id}.jpg`) : 'https://images.ygoprodeck.com/images/cards/back_high.jpg';
+            const imgSrc = c.id ? `https://images.ygoprodeck.com/images/cards/${c.id}.jpg` : 'https://images.ygoprodeck.com/images/cards/back_high.jpg';
             return `<div class="card-img-wrapper" data-name="${encodedName}" onclick="fetchCardData(decodeURIComponent('${encodedName}'))" oncontextmenu="changeQty('${encodedName}', -1); return false;" ondblclick="changeQty('${encodedName}', 1); window.getSelection().removeAllRanges();" title="${escapeHtml(c.name)}">
                 <img src="${imgSrc}" loading="lazy" />
                 ${ptsBadge}
@@ -847,7 +645,6 @@
         }
         imageContainer.innerHTML = imgHtml;
         
-        // Initialize Drag and Drop
         const initSortable = (selector) => {
             document.querySelectorAll(selector).forEach(el => {
                 new Sortable(el, {
@@ -859,63 +656,43 @@
                     ghostClass: 'sortable-ghost',
                     dragClass: 'sortable-drag',
                     onEnd: function (evt) {
-                        // Rebuild currentDeck strictly based on the visual DOM order of the active container.
                         const container = evt.to;
                         const newNames = Array.from(container.children).map(child => decodeURIComponent(child.dataset.name)).filter(n => n && n !== "undefined");
-                        
                         if (newNames.length === 0) return;
-                        
-                        // We need to figure out which group this container belongs to (Main/Extra/Monster/Spell/Trap)
-                        // The easiest way is to rebuild a subset of currentDeck based on the new visual order, 
-                        // and splice it back into the master currentDeck.
                         
                         const existingCards = [];
                         newNames.forEach(name => {
                            const card = currentDeck.find(c => c.name === name);
-                           if (card) existingCards.push({ ...card, qty: 1 }); // Flatten into individuals
+                           if (card) existingCards.push({ ...card, qty: 1 });
                         });
                         
-                        // Now group them sequentially to preserve the exact custom user order
                         const reGrouped = [];
                         existingCards.forEach(c => {
                             const last = reGrouped[reGrouped.length - 1];
-                            if (last && last.name === c.name) {
-                                last.qty++;
-                            } else {
-                                reGrouped.push(c);
-                            }
+                            if (last && last.name === c.name) last.qty++;
+                            else reGrouped.push(c);
                         });
                         
-                        // Replace the old elements in currentDeck with our newly ordered ones.
-                        // Filter out the ones we are replacing:
                         const typesBeingReplaced = [...new Set(reGrouped.map(c => c.typeGroup))];
                         let isFullDeckContainer = container.classList.contains('img-grid'); 
                         
                         let untouchedDeck = currentDeck.filter(c => {
                             if (isFullDeckContainer) {
-                                // If dragging in image view, we replaced ALL main or ALL extra
                                 const targetGroup = container.previousElementSibling.textContent.includes('Extra') ? 'Extra' : 'Main';
                                 const isExtra = c.typeGroup === 'Extra';
                                 return targetGroup === 'Extra' ? !isExtra : isExtra; 
                             } else {
-                                // If dragging in text view, we only replaced a specific subtype (e.g. Monsters)
                                 return !typesBeingReplaced.includes(c.typeGroup);
                             }
                         });
                         
                         currentDeck = [...untouchedDeck, ...reGrouped];
-                        
-                        // Enforce canonical internal ordering (Main first, Extra last, or grouped by type if in text mode)
-                        // If they dragged in image view, order is strictly preserved.
-                        
                         saveState();
                         renderDeck();
                     }
                 });
             });
         };
-        
-        // Apply to both text sections and image grids
         initSortable('.deck-section');
         initSortable('.img-grid');
     }
@@ -934,7 +711,6 @@
                     const c = idMap[idStr];
                     if(c) {
                         const m = findPointValue(c.name);
-                        // skipSave = true during mass import
                         addCardToDeckData(m.missing ? c.name : m.name, c.id, getCardGroup(c.type), m.missing ? 0 : m.pts, c.type, true, m.missing);
                     }
                 });
@@ -947,31 +723,14 @@
     function parseYDKIds(text) {
         const lines = text.split(/\r?\n/).map(l => l.trim());
         const mainIds = [];
-        const extraIds = [];
-        let currentSection = 'main'; // default
-        
+        let currentSection = 'main';
         for (const line of lines) {
-            if (line === '#main') {
-                currentSection = 'main';
-                continue;
-            } else if (line === '#extra') {
-                currentSection = 'extra';
-                continue;
-            } else if (line.startsWith('!side') || line.startsWith('#side')) {
-                currentSection = 'side';
-                continue;
-            } else if (line.startsWith('!') || line.startsWith('#')) {
-                // Ignore other metadata headers
-                continue;
-            }
-            
-            // If it's a card ID (numeric string) and we are not in the side section
+            if (line === '#main') { currentSection = 'main'; continue; }
+            else if (line === '#extra') { currentSection = 'extra'; continue; }
+            else if (line.startsWith('!side') || line.startsWith('#side')) { currentSection = 'side'; continue; }
+            else if (line.startsWith('!') || line.startsWith('#')) { continue; }
             if (line.match(/^\d+$/)) {
-                if (currentSection === 'main' || currentSection === 'extra') {
-                    // For our deck builder, we push all valid IDs into the unified list 
-                    // (getCardGroup or API lookup handles whether it goes to Main or Extra automatically!)
-                    mainIds.push(line);
-                }
+                if (currentSection === 'main' || currentSection === 'extra') mainIds.push(line);
             }
         }
         return mainIds;
@@ -993,12 +752,11 @@
         try {
             const text = await navigator.clipboard.readText();
             if(!text.trim()) return alert("Clipboard is empty.");
-            
             if (type === 'ydk') {
                 const ids = parseYDKIds(text);
                 lookupIdsAndAdd(ids);
             }
-        } catch(err) {
+        } catch(err) { 
             const manual = prompt("Browser blocked automatic clipboard access. Paste your .YDK text here:");
             if (manual && manual.trim()) {
                 const ids = parseYDKIds(manual);
@@ -1007,9 +765,10 @@
         }
     }
 
-            function exportToClipboard(type) {
+    function exportToClipboard(type) {
         if(currentDeck.length === 0) return alert("Deck empty!");
         let text = "";
+        
         if (type === 'ydk') {
             let m="", e="";
             currentDeck.forEach(c => {
@@ -1017,7 +776,7 @@
                 for(let i=0; i<c.qty; i++) l.push(c.id || c.name);
                 if(c.typeGroup==='Extra') e += l.join('\n')+'\n'; else m += l.join('\n')+'\n';
             });
-            text = `#main\n${m}#extra\n${e}!side\n`;
+            text = "#main\n" + m + "#extra\n" + e + "!side\n";
         }
         
         function fallbackCopy(str) {
@@ -1047,8 +806,8 @@
     function exportDeck(type) {
         if(currentDeck.length === 0) return alert("Deck is empty!");
         const name = document.getElementById('screenshotName').value.trim() || "untitled";
-        let out = `#created by GeNeRsys Deck Builder${'\n'}#main${'\n'}`;
-        let extraStr = `#extra${'\n'}`;
+        let out = "#created by GeNeRsys Deck Builder\n#main\n";
+        let extraStr = "#extra\n";
         currentDeck.forEach(c => {
             const lines = [];
             for(let i=0; i<c.qty; i++) lines.push(c.id || c.name);
@@ -1056,308 +815,193 @@
             else out += lines.join('\n') + '\n';
         });
         const a = document.createElement('a');
-        a.href = "data:text/plain;charset=utf-8," + encodeURIComponent(out + extraStr + `!side${'\n'}`);
+        a.href = "data:text/plain;charset=utf-8," + encodeURIComponent(out + extraStr + "!side\n");
         a.download = `${name}.ydk`;
         document.body.appendChild(a);
         a.click();
         a.remove();
     }
     
-    
-            function drawRoundedRect(ctx, x, y, w, h, r) {
-        ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + w - r, y);
-        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-        ctx.lineTo(x + w, y + h - r);
-        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        ctx.lineTo(x + r, y + h);
-        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-        ctx.lineTo(x, y + r);
-        ctx.quadraticCurveTo(x, y, x + r, y);
-        ctx.closePath();
-    }
-
     async function executeScreenshotWrap(isImageMode) {
         if (currentDeck.length === 0) return alert("Deck is empty!");
-        const statusEl = document.getElementById('viewerStatus');
-        statusEl.textContent = "Capturing...";
+        document.getElementById('viewerStatus').textContent = "Capturing...";
         
         try {
-            const groups = { Monster: [], Spell: [], Trap: [], Extra: [] };
-            let mainCount = 0, extraCount = 0, totalPts = 0;
-            const expandedMain = [];
-            const expandedExtra = [];
-
-            currentDeck.forEach(c => {
-                if (groups[c.typeGroup]) groups[c.typeGroup].push(c);
-                else groups.Monster.push(c);
-                totalPts += c.qty * c.pts;
-                if (c.typeGroup === 'Extra') extraCount += c.qty;
-                else mainCount += c.qty;
-                for (let i = 0; i < c.qty; i++) {
-                    if (c.typeGroup === 'Extra') expandedExtra.push(c);
-                    else expandedMain.push(c);
-                }
-            });
-
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'absolute';
+            wrapper.style.left = '-9999px';
+            wrapper.style.top = '0';
+            wrapper.style.width = '900px';
+            wrapper.style.background = '#0f172a';
+            wrapper.style.padding = '16px';
+            wrapper.style.borderRadius = '8px';
+            wrapper.style.color = '#f8fafc';
+            wrapper.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+            
+            const ssHeader = document.createElement('div');
+            ssHeader.style.display = 'flex';
+            ssHeader.style.justifyContent = 'space-between';
+            ssHeader.style.alignItems = 'center';
+            ssHeader.style.marginBottom = '12px';
+            ssHeader.style.background = '#0b1120';
+            ssHeader.style.border = '1px solid #334155';
+            ssHeader.style.borderRadius = '6px';
+            ssHeader.style.padding = '10px 16px';
+            
             const nameVal = document.getElementById('screenshotName').value.trim();
-            const exportBaseName = nameVal || "GeNeRsys_Decklist";
-
-            if (isImageMode) {
-                const uniqueIds = [...new Set(currentDeck.map(c => c.id).filter(Boolean))];
-                const pending = uniqueIds.map(id => preloadCardImage(id));
-                const timeout = new Promise(resolve => setTimeout(resolve, 4500));
-                await Promise.race([Promise.all(pending), timeout]);
-            }
-
-            const SCALE = 2;
-            const W = 900;
-            const PAD = 16;
-            const CW = W - PAD * 2;
-            const HEADER_H = 52;
-
-            let bodyH = 0;
-            const COLS = 10;
-            const GAP = 4;
-            const CARD_W = (CW - GAP * (COLS - 1)) / COLS;
-            const CARD_H = CARD_W / 0.686;
-            const SEC_HEADER_H = 28;
-
-            const orderedCards = [...groups.Monster, ...groups.Spell, ...groups.Trap, ...groups.Extra];
-            const col1Count = Math.ceil(orderedCards.length / 2);
-            const ROW_H = 30;
-            const ROW_GAP = 4;
-
-            if (isImageMode) {
-                if (expandedMain.length > 0) {
-                    const mainRows = Math.ceil(expandedMain.length / COLS);
-                    bodyH += SEC_HEADER_H + mainRows * CARD_H + Math.max(0, mainRows - 1) * GAP + (expandedExtra.length > 0 ? 14 : 0);
-                }
-                if (expandedExtra.length > 0) {
-                    const extraRows = Math.ceil(expandedExtra.length / COLS);
-                    bodyH += SEC_HEADER_H + extraRows * CARD_H + Math.max(0, extraRows - 1) * GAP;
-                }
-            } else {
-                bodyH = col1Count * ROW_H + Math.max(0, col1Count - 1) * ROW_GAP;
-            }
-
-            const H = PAD + HEADER_H + 12 + bodyH + PAD;
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.round(W * SCALE);
-            canvas.height = Math.round(H * SCALE);
-            const ctx = canvas.getContext('2d');
-            ctx.scale(SCALE, SCALE);
-
-            // 1. Main Background
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(0, 0, W, H);
-
-            // 2. Header Bar
-            drawRoundedRect(ctx, PAD, PAD, CW, HEADER_H, 6);
-            ctx.fillStyle = '#0b1120';
-            ctx.fill();
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = '#334155';
-            ctx.stroke();
-
-            // Deck Name on Left
             if (nameVal) {
-                ctx.fillStyle = '#ffffff';
-                ctx.font = "bold 20px 'Oswald', system-ui, sans-serif";
-                ctx.textBaseline = 'middle';
-                ctx.textAlign = 'left';
-                ctx.fillText(nameVal, PAD + 16, PAD + HEADER_H / 2);
+                const nameSpan = document.createElement('div');
+                nameSpan.style.fontSize = '1.2rem';
+                nameSpan.style.fontWeight = 'bold';
+                nameSpan.style.color = '#ffffff';
+                nameSpan.style.fontFamily = "'Oswald', sans-serif";
+                nameSpan.style.letterSpacing = '0.5px';
+                nameSpan.textContent = nameVal;
+                ssHeader.appendChild(nameSpan);
             }
-
-            // Stats Box on Right
-            const statsW = 240;
-            const statsH = 34;
-            const statsX = PAD + CW - statsW - 12;
-            const statsY = PAD + (HEADER_H - statsH) / 2;
-            drawRoundedRect(ctx, statsX, statsY, statsW, statsH, 4);
-            ctx.fillStyle = '#0f172a';
-            ctx.fill();
-            ctx.strokeStyle = '#334155';
-            ctx.stroke();
-
-            ctx.textBaseline = 'middle';
-            ctx.textAlign = 'left';
-            const sy = statsY + statsH / 2;
-            let sx = statsX + 12;
-
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = "400 13px system-ui, sans-serif";
-            ctx.fillText("Main", sx, sy);
-            sx += ctx.measureText("Main ").width + 2;
-
-            ctx.fillStyle = '#f8fafc';
-            ctx.font = "600 14px system-ui, sans-serif";
-            ctx.fillText(String(mainCount), sx, sy);
-            sx += ctx.measureText(String(mainCount)).width + 8;
-
-            ctx.fillStyle = '#334155';
-            ctx.fillText("|", sx, sy);
-            sx += 10;
-
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = "400 13px system-ui, sans-serif";
-            ctx.fillText("Extra", sx, sy);
-            sx += ctx.measureText("Extra ").width + 2;
-
-            ctx.fillStyle = '#f8fafc';
-            ctx.font = "600 14px system-ui, sans-serif";
-            ctx.fillText(String(extraCount), sx, sy);
-            sx += ctx.measureText(String(extraCount)).width + 12;
-
-            // Divider before Pts
-            ctx.beginPath();
-            ctx.moveTo(sx, statsY + 6);
-            ctx.lineTo(sx, statsY + statsH - 6);
-            ctx.strokeStyle = '#334155';
-            ctx.stroke();
-            sx += 10;
-
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = "400 13px system-ui, sans-serif";
-            ctx.fillText("Pts", sx, sy);
-            sx += ctx.measureText("Pts ").width + 4;
-
-            ctx.fillStyle = totalPts > MAX_POINTS ? '#ef4444' : '#22c55e';
-            ctx.font = "bold 15px system-ui, sans-serif";
-            ctx.fillText(String(totalPts), sx, sy);
-
-            // 3. Body Content
-            let curY = PAD + HEADER_H + 12;
-
+            
+            const rightStats = document.createElement('div');
+            rightStats.style.display = 'flex';
+            rightStats.style.alignItems = 'center';
+            rightStats.style.gap = '16px';
+            if (!nameVal) {
+                rightStats.style.width = '100%';
+                rightStats.style.justifyContent = 'space-between';
+            }
+            
+            const currentStatsUI = document.getElementById('uiStatsBox');
+            if (currentStatsUI) {
+                const statsClone = currentStatsUI.cloneNode(true);
+                rightStats.appendChild(statsClone);
+            }
+            
+            ssHeader.appendChild(rightStats);
+            wrapper.appendChild(ssHeader);
+            
             if (isImageMode) {
-                const drawCardGrid = (cardsArr, title, titleColor) => {
-                    if (cardsArr.length === 0) return;
-                    ctx.fillStyle = titleColor;
-                    ctx.font = "bold 16px system-ui, sans-serif";
-                    ctx.textAlign = 'left';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(title, PAD, curY + 10);
+                const imageContainerClone = document.getElementById('deckImageContainer').cloneNode(true);
+                imageContainerClone.removeAttribute('id');
+                imageContainerClone.style.display = 'flex';
+                imageContainerClone.style.flexDirection = 'column';
+                imageContainerClone.style.overflow = 'visible';
+                imageContainerClone.style.height = 'auto';
+                
+                imageContainerClone.querySelectorAll('.card-img-wrapper').forEach(el => {
+                    el.style.transform = 'none';
+                });
+                
+                const imgElements = Array.from(imageContainerClone.querySelectorAll('img'));
+                const uniqueSrcs = [...new Set(imgElements.map(img => img.src.split('?')[0]))];
+                const base64Map = {};
 
-                    ctx.beginPath();
-                    ctx.moveTo(PAD, curY + 22);
-                    ctx.lineTo(PAD + CW, curY + 22);
-                    ctx.strokeStyle = '#334155';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-
-                    curY += SEC_HEADER_H;
-
-                    cardsArr.forEach((c, idx) => {
-                        const col = idx % COLS;
-                        const row = Math.floor(idx / COLS);
-                        const cx = PAD + col * (CARD_W + GAP);
-                        const cy = curY + row * (CARD_H + GAP);
-
-                        ctx.save();
-                        drawRoundedRect(ctx, cx, cy, CARD_W, CARD_H, 4);
-                        ctx.clip();
-
-                        const cached = c.id && cardImageCache[c.id] ? cardImageCache[c.id].img : null;
-                        if (cached) {
-                            ctx.drawImage(cached, cx, cy, CARD_W, CARD_H);
-                        } else {
-                            ctx.fillStyle = '#1e293b';
-                            ctx.fillRect(cx, cy, CARD_W, CARD_H);
-                            ctx.fillStyle = '#f8fafc';
-                            ctx.font = "bold 10px 'Oswald', sans-serif";
-                            ctx.textAlign = 'center';
-                            ctx.fillText(c.name.slice(0, 14), cx + CARD_W / 2, cy + CARD_H / 2);
+                const promises = uniqueSrcs.map(async (origSrc) => {
+                    const nakedUrl = origSrc.replace(/^https?:\/\//, '');
+                    try {
+                        const res = await fetch('https://wsrv.nl/?url=' + encodeURIComponent(nakedUrl) + '&w=250&we', { cache: 'force-cache' });
+                        if (!res.ok) throw new Error('Proxy 1 failed');
+                        const blob = await res.blob();
+                        const base64 = await new Promise(resolve => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve(reader.result);
+                            reader.readAsDataURL(blob);
+                        });
+                        base64Map[origSrc] = base64;
+                    } catch (e1) {
+                        try {
+                            const res2 = await fetch('https://corsproxy.io/?' + encodeURIComponent(origSrc), { cache: 'force-cache' });
+                            if (!res2.ok) throw new Error('Proxy 2 failed');
+                            const blob2 = await res2.blob();
+                            const base64_2 = await new Promise(resolve => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result);
+                                reader.readAsDataURL(blob2);
+                            });
+                            base64Map[origSrc] = base64_2;
+                        } catch (e2) {
+                            base64Map[origSrc] = origSrc; 
                         }
-
-                        if (c.isMissing) {
-                            ctx.font = "18px system-ui, sans-serif";
-                            ctx.textAlign = 'right';
-                            ctx.textBaseline = 'top';
-                            ctx.fillText("🚫", cx + CARD_W - 2, cy + 2);
-                        } else if (c.pts && c.pts > 0) {
-                            const pStr = String(c.pts);
-                            ctx.font = "bold 12px system-ui, sans-serif";
-                            const bw = Math.max(22, ctx.measureText(pStr).width + 10);
-                            const bh = 18;
-                            const bx = cx + CARD_W - bw;
-                            const by = cy;
-
-                            ctx.fillStyle = '#f9cb9c';
-                            ctx.fillRect(bx, by, bw, bh);
-                            ctx.strokeStyle = '#0f172a';
-                            ctx.lineWidth = 2;
-                            ctx.strokeRect(bx, by, bw, bh);
-
-                            ctx.fillStyle = '#0f172a';
-                            ctx.textAlign = 'center';
-                            ctx.textBaseline = 'middle';
-                            ctx.fillText(pStr, bx + bw / 2, by + bh / 2);
-                        }
-                        ctx.restore();
-                    });
-
-                    const totalRows = Math.ceil(cardsArr.length / COLS);
-                    curY += totalRows * CARD_H + Math.max(0, totalRows - 1) * GAP + 14;
-                };
-
-                drawCardGrid(expandedMain, `Main Deck [${mainCount}]`, '#38bdf8');
-                drawCardGrid(expandedExtra, `Extra Deck [${extraCount}]`, '#8b5cf6');
+                    }
+                });
+                
+                wrapper.appendChild(imageContainerClone);
+                const timeout = new Promise(resolve => setTimeout(resolve, 6000));
+                await Promise.race([Promise.all(promises), timeout]);
+                
+                imgElements.forEach(img => {
+                    const origSrc = img.src.split('?')[0];
+                    if (base64Map[origSrc]) img.src = base64Map[origSrc];
+                });
             } else {
-                const COL_W = (CW - 12) / 2;
-                const drawTextColumn = (items, startX) => {
-                    items.forEach((c, idx) => {
-                        const ry = curY + idx * (ROW_H + ROW_GAP);
-                        const colors = getCardColors(c.rawType);
-
-                        drawRoundedRect(ctx, startX, ry, COL_W, ROW_H, 4);
-                        ctx.fillStyle = colors.bg === 'var(--text)' ? '#0b1120' : colors.bg;
-                        ctx.fill();
-                        ctx.lineWidth = 1;
-                        ctx.strokeStyle = '#334155';
-                        ctx.stroke();
-
-                        const textCol = colors.text === 'var(--text)' ? '#f8fafc' : colors.text;
-                        ctx.fillStyle = colors.controls || textCol;
-                        ctx.font = "bold 13px system-ui, sans-serif";
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(String(c.qty), startX + 16, ry + ROW_H / 2);
-
-                        ctx.fillStyle = textCol;
-                        ctx.font = "bold 14px 'Oswald', system-ui, sans-serif";
-                        ctx.textAlign = 'left';
-                        const maxNameW = COL_W - 72;
-                        let dispName = c.name;
-                        while (dispName.length > 3 && ctx.measureText(dispName).width > maxNameW) {
-                            dispName = dispName.slice(0, -2) + '…';
+                let allRowsData = [];
+                document.querySelectorAll('#deckTextContainer .card-row').forEach(row => {
+                    if (!row.classList.contains('last-row') || row.textContent.trim() !== 'Empty') {
+                        const nameEl = row.querySelector('.card-name');
+                        if (nameEl) allRowsData.push({ html: row.outerHTML });
+                    }
+                });
+                
+                const X = allRowsData.length;
+                let col1Count = (X % 2 === 0) ? (X / 2) : ((X / 2) + 0.5);
+                
+                const dualContainer = document.createElement('div');
+                dualContainer.style.display = 'grid';
+                dualContainer.style.gridTemplateColumns = 'repeat(2, 1fr)';
+                dualContainer.style.gap = '12px';
+                dualContainer.style.alignItems = 'start';
+                
+                const createColumnDiv = (items) => {
+                    const colDiv = document.createElement('div');
+                    colDiv.style.display = 'flex';
+                    colDiv.style.flexDirection = 'column';
+                    colDiv.style.gap = '4px';
+                    
+                    items.forEach(item => {
+                        const temp = document.createElement('div');
+                        temp.innerHTML = item.html;
+                        const cardRow = temp.firstElementChild;
+                        
+                        const qtyControls = cardRow.querySelector('.qty-controls');
+                        if (qtyControls) {
+                            const qtyNum = qtyControls.querySelector('.qty-num');
+                            const span = document.createElement('span');
+                            span.style.fontWeight = 'bold';
+                            span.style.fontSize = '0.75rem';
+                            span.style.padding = '0 6px';
+                            span.style.color = cardRow.style.getPropertyValue('--control-color').trim() || '#0f172a';
+                            span.textContent = qtyNum ? qtyNum.textContent : '1';
+                            qtyControls.parentNode.replaceChild(span, qtyControls);
                         }
-                        ctx.fillText(dispName, startX + 32, ry + ROW_H / 2);
-
-                        const sub = c.qty * c.pts;
-                        if (c.isMissing) {
-                            ctx.font = "15px system-ui, sans-serif";
-                            ctx.textAlign = 'center';
-                            ctx.fillText("🚫", startX + COL_W - 21, ry + ROW_H / 2);
-                        } else if (sub > 0) {
-                            const bx = startX + COL_W - 36;
-                            const by = ry + 4;
-                            drawRoundedRect(ctx, bx, by, 30, ROW_H - 8, 4);
-                            ctx.fillStyle = '#f9cb9c';
-                            ctx.fill();
-                            ctx.fillStyle = '#0f172a';
-                            ctx.font = "bold 13px system-ui, sans-serif";
-                            ctx.textAlign = 'center';
-                            ctx.fillText(String(sub), bx + 15, ry + ROW_H / 2);
+                        
+                        const nameEl = cardRow.querySelector('.card-name');
+                        if (nameEl) {
+                            nameEl.style.whiteSpace = 'normal';
+                            nameEl.style.overflow = 'visible';
+                            nameEl.style.textOverflow = 'clip';
+                            nameEl.style.lineHeight = '1.2';
                         }
+                        colDiv.appendChild(cardRow);
                     });
+                    return colDiv;
                 };
-
-                drawTextColumn(orderedCards.slice(0, col1Count), PAD);
-                drawTextColumn(orderedCards.slice(col1Count), PAD + COL_W + 12);
+                
+                dualContainer.appendChild(createColumnDiv(allRowsData.slice(0, col1Count)));
+                dualContainer.appendChild(createColumnDiv(allRowsData.slice(col1Count)));
+                wrapper.appendChild(dualContainer);
             }
-
-            statusEl.textContent = "";
+            
+            document.body.appendChild(wrapper);
+            await new Promise(r => setTimeout(r, 200));
+            
+            const canvas = await html2canvas(wrapper, {
+                scale: 2,
+                backgroundColor: '#0f172a',
+                logging: false,
+                useCORS: true
+            });
+            
+            document.body.removeChild(wrapper);
+            document.getElementById('viewerStatus').textContent = "";
+            
             const image = canvas.toDataURL("image/png");
             const a = document.createElement('a');
             a.href = image;
@@ -1367,14 +1011,11 @@
             a.remove();
         } catch (err) {
             console.error("Screenshot failed", err);
-            statusEl.textContent = "";
+            document.getElementById('viewerStatus').textContent = "";
             alert("Failed to capture screenshot.");
         }
     }
 
     toggleIO(); 
-    saveState(); // Initial empty state
+    saveState(); 
     renderDeck();
-  </script>
-</body>
-</html>

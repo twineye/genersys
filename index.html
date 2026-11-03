@@ -958,20 +958,48 @@
         } catch(err) { alert("Clipboard read failed. Ensure browser permissions are granted."); }
     }
 
-    function exportToClipboard(type) {
+        function exportToClipboard(type) {
         if(currentDeck.length === 0) return alert("Deck empty!");
         let text = "";
-        
         if (type === 'ydk') {
             let m="", e="";
             currentDeck.forEach(c => {
                 const l = [];
                 for(let i=0; i<c.qty; i++) l.push(c.id || c.name);
-                if(c.typeGroup==='Extra') e += l.join('\n')+'\n'; else m += l.join('\n')+'\n';
+                if(c.typeGroup==='Extra') e += l.join('
+')+'
+'; else m += l.join('
+')+'
+';
             });
-            text = `#main${'\n'}${m}#extra${'\n'}${e}!side${'\n'}`;
+            text = `#main
+${m}#extra
+${e}!side
+`;
         }
-        navigator.clipboard.writeText(text).then(()=>alert("Copied!")).catch(()=>alert("Copy failed."));
+        
+        function fallbackCopy(str) {
+            const ta = document.createElement("textarea");
+            ta.value = str;
+            ta.style.position = "fixed";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            try {
+                document.execCommand('copy');
+                alert("Copied!");
+            } catch (err) {
+                alert("Copy failed. Your browser may be blocking it.");
+            }
+            document.body.removeChild(ta);
+        }
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(()=>alert("Copied!")).catch(()=>fallbackCopy(text));
+        } else {
+            fallbackCopy(text);
+        }
     }
 
     function exportDeck(type) {
@@ -1000,7 +1028,7 @@
         
         try {
             const wrapper = document.createElement('div');
-            wrapper.style.position = 'fixed';
+            wrapper.style.position = 'absolute';
             wrapper.style.left = '-9999px';
             wrapper.style.top = '0';
             wrapper.style.width = '900px';
@@ -1067,30 +1095,52 @@
                     el.style.transform = 'none'; // prevent hover transform capture
                 });
                 
-                // Route images through a CORS-enabled image proxy to prevent canvas tainting (since YGOPRODeck lacks CORS headers)
-                const promises = [];
-                imageContainerClone.querySelectorAll('img').forEach(img => {
-                    const origSrc = img.src.split('?')[0]; // strip any previous cache busters
-                    img.loading = "eager";
-                    img.crossOrigin = "anonymous"; // Required for html2canvas
-                    
-                    // Use wsrv.nl (a highly reliable image caching CDN proxy)
+                // Pre-convert UNIQUE images to Base64 Data URIs via fetch. 
+                // Deduplicates network requests so a card with 3 copies only fetches 1 time.
+                const imgElements = Array.from(imageContainerClone.querySelectorAll('img'));
+                const uniqueSrcs = [...new Set(imgElements.map(img => img.src.split('?')[0]))];
+                const base64Map = {};
+
+                const promises = uniqueSrcs.map(async (origSrc) => {
                     const nakedUrl = origSrc.replace(/^https?:\/\//, '');
-                    img.src = 'https://wsrv.nl/?url=' + encodeURIComponent(nakedUrl) + '&we';
-                    
-                    promises.push(new Promise(resolve => {
-                        img.onload = resolve;
-                        img.onerror = () => {
-                            // Fallback proxy if wsrv is down
-                            img.src = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(origSrc);
-                            img.onload = resolve;
-                            img.onerror = resolve;
-                        };
-                    }));
+                    try {
+                        const res = await fetch('https://wsrv.nl/?url=' + encodeURIComponent(nakedUrl) + '&we', { cache: 'force-cache' });
+                        if (!res.ok) throw new Error('Proxy 1 failed');
+                        const blob = await res.blob();
+                        const base64 = await new Promise(resolve => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve(reader.result);
+                            reader.readAsDataURL(blob);
+                        });
+                        base64Map[origSrc] = base64;
+                    } catch (e1) {
+                        try {
+                            const res2 = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(origSrc), { cache: 'force-cache' });
+                            if (!res2.ok) throw new Error('Proxy 2 failed');
+                            const blob2 = await res2.blob();
+                            const base64_2 = await new Promise(resolve => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result);
+                                reader.readAsDataURL(blob2);
+                            });
+                            base64Map[origSrc] = base64_2;
+                        } catch (e2) {
+                            base64Map[origSrc] = origSrc; // fallback to original if both proxies fail
+                        }
+                    }
                 });
                 
                 wrapper.appendChild(imageContainerClone);
-                await Promise.all(promises);
+                const timeout = new Promise(resolve => setTimeout(resolve, 6000)); // 6 second hard timeout
+                await Promise.race([Promise.all(promises), timeout]);
+                
+                // Apply the fetched base64 data to all instances of the images
+                imgElements.forEach(img => {
+                    const origSrc = img.src.split('?')[0];
+                    if (base64Map[origSrc]) {
+                        img.src = base64Map[origSrc];
+                    }
+                });
             } else {
                 let allRowsData = [];
                 document.querySelectorAll('#deckTextContainer .card-row').forEach(row => {
@@ -1155,7 +1205,7 @@
             await new Promise(r => setTimeout(r, 200));
             
             const canvas = await html2canvas(wrapper, {
-                scale: 3,
+                scale: 2,
                 backgroundColor: '#0f172a',
                 logging: false,
                 useCORS: true

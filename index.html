@@ -303,6 +303,48 @@
     let currentDeck = []; 
     let deckHistory = [];
     let historyIndex = -1;
+    const cardImageCache = {};
+
+    function preloadCardImage(id) {
+        if (!id) return Promise.resolve(null);
+        if (cardImageCache[id]) return cardImageCache[id].promise;
+        
+        const entry = { img: null, objectUrl: null, promise: null };
+        const rawUrl = `https://images.ygoprodeck.com/images/cards/${id}.jpg`;
+        const nakedUrl = `images.ygoprodeck.com/images/cards/${id}.jpg`;
+        const proxies = [
+            `https://wsrv.nl/?url=${encodeURIComponent(nakedUrl)}&w=250&we`,
+            `https://corsproxy.io/?${encodeURIComponent(rawUrl)}`,
+            `https://api.allorigins.win/raw?url=${encodeURIComponent(rawUrl)}`
+        ];
+
+        entry.promise = (async () => {
+            for (const proxyUrl of proxies) {
+                try {
+                    const res = await fetch(proxyUrl, { cache: 'force-cache' });
+                    if (!res.ok) continue;
+                    const blob = await res.blob();
+                    if (!blob || blob.size < 500) continue;
+                    const objUrl = URL.createObjectURL(blob);
+                    const loadedImg = await new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.onload = () => resolve(img);
+                        img.onerror = reject;
+                        img.src = objUrl;
+                    });
+                    entry.img = loadedImg;
+                    entry.objectUrl = objUrl;
+                    return loadedImg;
+                } catch (e) {
+                    // try next proxy
+                }
+            }
+            return null;
+        })();
+
+        cardImageCache[id] = entry;
+        return entry.promise;
+    }
 
     function saveState() {
         if (historyIndex < deckHistory.length - 1) {
@@ -623,6 +665,7 @@
     }
 
     function addCardToDeckData(name, id, group, pts, rawType, skipSave = false, isMissing = false) {
+      if (id) preloadCardImage(id);
       const counts = getDeckCounts();
       const existing = currentDeck.find(c => c.name === name);
       
@@ -782,7 +825,7 @@
         const renderImgCard = (c) => {
             const encodedName = encodeURIComponent(c.name);
             const ptsBadge = c.isMissing ? `<div class="card-img-pts" style="background:transparent; border:none; box-shadow:none; font-size:1.4rem; top:-6px; right:-2px; padding:0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));">🚫</div>` : (c.pts && c.pts > 0 ? `<div class="card-img-pts">${c.pts}</div>` : '');
-            const imgSrc = c.id ? `https://images.ygoprodeck.com/images/cards/${c.id}.jpg` : 'https://images.ygoprodeck.com/images/cards/back_high.jpg';
+            const imgSrc = c.id ? (cardImageCache[c.id] && cardImageCache[c.id].objectUrl ? cardImageCache[c.id].objectUrl : `https://images.ygoprodeck.com/images/cards/${c.id}.jpg`) : 'https://images.ygoprodeck.com/images/cards/back_high.jpg';
             return `<div class="card-img-wrapper" data-name="${encodedName}" onclick="fetchCardData(decodeURIComponent('${encodedName}'))" oncontextmenu="changeQty('${encodedName}', -1); return false;" ondblclick="changeQty('${encodedName}', 1); window.getSelection().removeAllRanges();" title="${escapeHtml(c.name)}">
                 <img src="${imgSrc}" loading="lazy" />
                 ${ptsBadge}
@@ -955,7 +998,13 @@
                 const ids = parseYDKIds(text);
                 lookupIdsAndAdd(ids);
             }
-        } catch(err) { alert("Clipboard read failed. Ensure browser permissions are granted."); }
+        } catch(err) {
+            const manual = prompt("Browser blocked automatic clipboard access. Paste your .YDK text here:");
+            if (manual && manual.trim()) {
+                const ids = parseYDKIds(manual);
+                lookupIdsAndAdd(ids);
+            }
+        }
     }
 
             function exportToClipboard(type) {
@@ -1015,208 +1064,310 @@
     }
     
     
-        async function executeScreenshotWrap(isImageMode) {
+            function drawRoundedRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+    }
+
+    async function executeScreenshotWrap(isImageMode) {
         if (currentDeck.length === 0) return alert("Deck is empty!");
-        document.getElementById('viewerStatus').textContent = "Capturing...";
+        const statusEl = document.getElementById('viewerStatus');
+        statusEl.textContent = "Capturing...";
         
         try {
-            const wrapper = document.createElement('div');
-            wrapper.style.position = 'absolute';
-            wrapper.style.left = '-9999px';
-            wrapper.style.top = '0';
-            wrapper.style.width = '900px';
-            wrapper.style.background = '#0f172a';
-            wrapper.style.padding = '16px';
-            wrapper.style.borderRadius = '8px';
-            wrapper.style.color = '#f8fafc';
-            wrapper.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-            
-            // Build a clean, dedicated header for the snapshot
-            const ssHeader = document.createElement('div');
-            ssHeader.style.display = 'flex';
-            ssHeader.style.justifyContent = 'space-between';
-            ssHeader.style.alignItems = 'center';
-            ssHeader.style.marginBottom = '12px';
-            ssHeader.style.background = '#0b1120';
-            ssHeader.style.border = '1px solid #334155';
-            ssHeader.style.borderRadius = '6px';
-            ssHeader.style.padding = '10px 16px';
-            
-            const nameVal = document.getElementById('screenshotName').value.trim();
-            
-            // 1. Left side: Deck Name (if available)
-            if (nameVal) {
-                const nameSpan = document.createElement('div');
-                nameSpan.style.fontSize = '1.2rem';
-                nameSpan.style.fontWeight = 'bold';
-                nameSpan.style.color = '#ffffff';
-                nameSpan.style.fontFamily = "'Oswald', sans-serif";
-                nameSpan.style.letterSpacing = '0.5px';
-                nameSpan.textContent = nameVal;
-                ssHeader.appendChild(nameSpan);
-            }
-            
-            // 2. Right side (or centered if no name): Main/Extra counts and Total Points
-            const rightStats = document.createElement('div');
-            rightStats.style.display = 'flex';
-            rightStats.style.alignItems = 'center';
-            rightStats.style.gap = '16px';
-            if (!nameVal) {
-                rightStats.style.width = '100%';
-                rightStats.style.justifyContent = 'space-between';
-            }
-            
-            // Clone counts & points from the stats box ONLY
-            const currentStatsUI = document.getElementById('uiStatsBox');
-            if (currentStatsUI) {
-                const statsClone = currentStatsUI.cloneNode(true);
-                rightStats.appendChild(statsClone);
-            }
-            
-            ssHeader.appendChild(rightStats);
-            wrapper.appendChild(ssHeader);
-            
-            if (isImageMode) {
-                const imageContainerClone = document.getElementById('deckImageContainer').cloneNode(true);
-                imageContainerClone.removeAttribute('id'); // Remove the ID to prevent CSS !important hiding it on mobile
-                imageContainerClone.style.display = 'flex';
-                imageContainerClone.style.flexDirection = 'column'; // Explicitly restore vertical stacking
-                imageContainerClone.style.overflow = 'visible';
-                imageContainerClone.style.height = 'auto';
-                
-                imageContainerClone.querySelectorAll('.card-img-wrapper').forEach(el => {
-                    el.style.transform = 'none'; // prevent hover transform capture
-                });
-                
-                // Pre-convert UNIQUE images to Base64 Data URIs via fetch. 
-                // Deduplicates network requests so a card with 3 copies only fetches 1 time.
-                const imgElements = Array.from(imageContainerClone.querySelectorAll('img'));
-                const uniqueSrcs = [...new Set(imgElements.map(img => img.src.split('?')[0]))];
-                const base64Map = {};
+            const groups = { Monster: [], Spell: [], Trap: [], Extra: [] };
+            let mainCount = 0, extraCount = 0, totalPts = 0;
+            const expandedMain = [];
+            const expandedExtra = [];
 
-                const promises = uniqueSrcs.map(async (origSrc) => {
-                    const nakedUrl = origSrc.replace(/^https?:\/\//, '');
-                    try {
-                        const res = await fetch('https://wsrv.nl/?url=' + encodeURIComponent(nakedUrl) + '&we', { cache: 'force-cache' });
-                        if (!res.ok) throw new Error('Proxy 1 failed');
-                        const blob = await res.blob();
-                        const base64 = await new Promise(resolve => {
-                            const reader = new FileReader();
-                            reader.onloadend = () => resolve(reader.result);
-                            reader.readAsDataURL(blob);
-                        });
-                        base64Map[origSrc] = base64;
-                    } catch (e1) {
-                        try {
-                            const res2 = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(origSrc), { cache: 'force-cache' });
-                            if (!res2.ok) throw new Error('Proxy 2 failed');
-                            const blob2 = await res2.blob();
-                            const base64_2 = await new Promise(resolve => {
-                                const reader = new FileReader();
-                                reader.onloadend = () => resolve(reader.result);
-                                reader.readAsDataURL(blob2);
-                            });
-                            base64Map[origSrc] = base64_2;
-                        } catch (e2) {
-                            base64Map[origSrc] = origSrc; // fallback to original if both proxies fail
-                        }
-                    }
-                });
-                
-                wrapper.appendChild(imageContainerClone);
-                const timeout = new Promise(resolve => setTimeout(resolve, 6000)); // 6 second hard timeout
-                await Promise.race([Promise.all(promises), timeout]);
-                
-                // Apply the fetched base64 data to all instances of the images
-                imgElements.forEach(img => {
-                    const origSrc = img.src.split('?')[0];
-                    if (base64Map[origSrc]) {
-                        img.src = base64Map[origSrc];
-                    }
-                });
-            } else {
-                let allRowsData = [];
-                document.querySelectorAll('#deckTextContainer .card-row').forEach(row => {
-                    if (!row.classList.contains('last-row') || row.textContent.trim() !== 'Empty') {
-                        const nameEl = row.querySelector('.card-name');
-                        if (nameEl) allRowsData.push({ html: row.outerHTML });
-                    }
-                });
-                
-                const X = allRowsData.length;
-                let col1Count = (X % 2 === 0) ? (X / 2) : ((X / 2) + 0.5);
-                
-                const dualContainer = document.createElement('div');
-                dualContainer.style.display = 'grid';
-                dualContainer.style.gridTemplateColumns = 'repeat(2, 1fr)';
-                dualContainer.style.gap = '12px';
-                dualContainer.style.alignItems = 'start';
-                
-                const createColumnDiv = (items) => {
-                    const colDiv = document.createElement('div');
-                    colDiv.style.display = 'flex';
-                    colDiv.style.flexDirection = 'column';
-                    colDiv.style.gap = '4px';
-                    
-                    items.forEach(item => {
-                        const temp = document.createElement('div');
-                        temp.innerHTML = item.html;
-                        const cardRow = temp.firstElementChild;
-                        
-                        const qtyControls = cardRow.querySelector('.qty-controls');
-                        if (qtyControls) {
-                            const qtyNum = qtyControls.querySelector('.qty-num');
-                            const span = document.createElement('span');
-                            span.style.fontWeight = 'bold';
-                            span.style.fontSize = '0.75rem';
-                            span.style.padding = '0 6px';
-                            span.style.color = cardRow.style.getPropertyValue('--control-color').trim() || '#0f172a';
-                            span.textContent = qtyNum ? qtyNum.textContent : '1';
-                            qtyControls.parentNode.replaceChild(span, qtyControls);
-                        }
-                        
-                        const nameEl = cardRow.querySelector('.card-name');
-                        if (nameEl) {
-                            nameEl.style.whiteSpace = 'normal';
-                            nameEl.style.overflow = 'visible';
-                            nameEl.style.textOverflow = 'clip';
-                            nameEl.style.lineHeight = '1.2';
-                        }
-                        colDiv.appendChild(cardRow);
-                    });
-                    return colDiv;
-                };
-                
-                dualContainer.appendChild(createColumnDiv(allRowsData.slice(0, col1Count)));
-                dualContainer.appendChild(createColumnDiv(allRowsData.slice(col1Count)));
-                wrapper.appendChild(dualContainer);
-            }
-            
-            document.body.appendChild(wrapper);
-            
-            // Give DOM a tick to layout, especially for images
-            await new Promise(r => setTimeout(r, 200));
-            
-            const canvas = await html2canvas(wrapper, {
-                scale: 2,
-                backgroundColor: '#0f172a',
-                logging: false,
-                useCORS: true
+            currentDeck.forEach(c => {
+                if (groups[c.typeGroup]) groups[c.typeGroup].push(c);
+                else groups.Monster.push(c);
+                totalPts += c.qty * c.pts;
+                if (c.typeGroup === 'Extra') extraCount += c.qty;
+                else mainCount += c.qty;
+                for (let i = 0; i < c.qty; i++) {
+                    if (c.typeGroup === 'Extra') expandedExtra.push(c);
+                    else expandedMain.push(c);
+                }
             });
-            
-            document.body.removeChild(wrapper);
-            document.getElementById('viewerStatus').textContent = "";
-            
+
+            const nameVal = document.getElementById('screenshotName').value.trim();
+            const exportBaseName = nameVal || "GeNeRsys_Decklist";
+
+            if (isImageMode) {
+                const uniqueIds = [...new Set(currentDeck.map(c => c.id).filter(Boolean))];
+                const pending = uniqueIds.map(id => preloadCardImage(id));
+                const timeout = new Promise(resolve => setTimeout(resolve, 4500));
+                await Promise.race([Promise.all(pending), timeout]);
+            }
+
+            const SCALE = 2;
+            const W = 900;
+            const PAD = 16;
+            const CW = W - PAD * 2;
+            const HEADER_H = 52;
+
+            let bodyH = 0;
+            const COLS = 10;
+            const GAP = 4;
+            const CARD_W = (CW - GAP * (COLS - 1)) / COLS;
+            const CARD_H = CARD_W / 0.686;
+            const SEC_HEADER_H = 28;
+
+            const orderedCards = [...groups.Monster, ...groups.Spell, ...groups.Trap, ...groups.Extra];
+            const col1Count = Math.ceil(orderedCards.length / 2);
+            const ROW_H = 30;
+            const ROW_GAP = 4;
+
+            if (isImageMode) {
+                if (expandedMain.length > 0) {
+                    const mainRows = Math.ceil(expandedMain.length / COLS);
+                    bodyH += SEC_HEADER_H + mainRows * CARD_H + Math.max(0, mainRows - 1) * GAP + (expandedExtra.length > 0 ? 14 : 0);
+                }
+                if (expandedExtra.length > 0) {
+                    const extraRows = Math.ceil(expandedExtra.length / COLS);
+                    bodyH += SEC_HEADER_H + extraRows * CARD_H + Math.max(0, extraRows - 1) * GAP;
+                }
+            } else {
+                bodyH = col1Count * ROW_H + Math.max(0, col1Count - 1) * ROW_GAP;
+            }
+
+            const H = PAD + HEADER_H + 12 + bodyH + PAD;
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(W * SCALE);
+            canvas.height = Math.round(H * SCALE);
+            const ctx = canvas.getContext('2d');
+            ctx.scale(SCALE, SCALE);
+
+            // 1. Main Background
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, W, H);
+
+            // 2. Header Bar
+            drawRoundedRect(ctx, PAD, PAD, CW, HEADER_H, 6);
+            ctx.fillStyle = '#0b1120';
+            ctx.fill();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#334155';
+            ctx.stroke();
+
+            // Deck Name on Left
+            if (nameVal) {
+                ctx.fillStyle = '#ffffff';
+                ctx.font = "bold 20px 'Oswald', system-ui, sans-serif";
+                ctx.textBaseline = 'middle';
+                ctx.textAlign = 'left';
+                ctx.fillText(nameVal, PAD + 16, PAD + HEADER_H / 2);
+            }
+
+            // Stats Box on Right
+            const statsW = 240;
+            const statsH = 34;
+            const statsX = PAD + CW - statsW - 12;
+            const statsY = PAD + (HEADER_H - statsH) / 2;
+            drawRoundedRect(ctx, statsX, statsY, statsW, statsH, 4);
+            ctx.fillStyle = '#0f172a';
+            ctx.fill();
+            ctx.strokeStyle = '#334155';
+            ctx.stroke();
+
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'left';
+            const sy = statsY + statsH / 2;
+            let sx = statsX + 12;
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = "400 13px system-ui, sans-serif";
+            ctx.fillText("Main", sx, sy);
+            sx += ctx.measureText("Main ").width + 2;
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = "600 14px system-ui, sans-serif";
+            ctx.fillText(String(mainCount), sx, sy);
+            sx += ctx.measureText(String(mainCount)).width + 8;
+
+            ctx.fillStyle = '#334155';
+            ctx.fillText("|", sx, sy);
+            sx += 10;
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = "400 13px system-ui, sans-serif";
+            ctx.fillText("Extra", sx, sy);
+            sx += ctx.measureText("Extra ").width + 2;
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = "600 14px system-ui, sans-serif";
+            ctx.fillText(String(extraCount), sx, sy);
+            sx += ctx.measureText(String(extraCount)).width + 12;
+
+            // Divider before Pts
+            ctx.beginPath();
+            ctx.moveTo(sx, statsY + 6);
+            ctx.lineTo(sx, statsY + statsH - 6);
+            ctx.strokeStyle = '#334155';
+            ctx.stroke();
+            sx += 10;
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = "400 13px system-ui, sans-serif";
+            ctx.fillText("Pts", sx, sy);
+            sx += ctx.measureText("Pts ").width + 4;
+
+            ctx.fillStyle = totalPts > MAX_POINTS ? '#ef4444' : '#22c55e';
+            ctx.font = "bold 15px system-ui, sans-serif";
+            ctx.fillText(String(totalPts), sx, sy);
+
+            // 3. Body Content
+            let curY = PAD + HEADER_H + 12;
+
+            if (isImageMode) {
+                const drawCardGrid = (cardsArr, title, titleColor) => {
+                    if (cardsArr.length === 0) return;
+                    ctx.fillStyle = titleColor;
+                    ctx.font = "bold 16px system-ui, sans-serif";
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(title, PAD, curY + 10);
+
+                    ctx.beginPath();
+                    ctx.moveTo(PAD, curY + 22);
+                    ctx.lineTo(PAD + CW, curY + 22);
+                    ctx.strokeStyle = '#334155';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    curY += SEC_HEADER_H;
+
+                    cardsArr.forEach((c, idx) => {
+                        const col = idx % COLS;
+                        const row = Math.floor(idx / COLS);
+                        const cx = PAD + col * (CARD_W + GAP);
+                        const cy = curY + row * (CARD_H + GAP);
+
+                        ctx.save();
+                        drawRoundedRect(ctx, cx, cy, CARD_W, CARD_H, 4);
+                        ctx.clip();
+
+                        const cached = c.id && cardImageCache[c.id] ? cardImageCache[c.id].img : null;
+                        if (cached) {
+                            ctx.drawImage(cached, cx, cy, CARD_W, CARD_H);
+                        } else {
+                            ctx.fillStyle = '#1e293b';
+                            ctx.fillRect(cx, cy, CARD_W, CARD_H);
+                            ctx.fillStyle = '#f8fafc';
+                            ctx.font = "bold 10px 'Oswald', sans-serif";
+                            ctx.textAlign = 'center';
+                            ctx.fillText(c.name.slice(0, 14), cx + CARD_W / 2, cy + CARD_H / 2);
+                        }
+
+                        if (c.isMissing) {
+                            ctx.font = "18px system-ui, sans-serif";
+                            ctx.textAlign = 'right';
+                            ctx.textBaseline = 'top';
+                            ctx.fillText("🚫", cx + CARD_W - 2, cy + 2);
+                        } else if (c.pts && c.pts > 0) {
+                            const pStr = String(c.pts);
+                            ctx.font = "bold 12px system-ui, sans-serif";
+                            const bw = Math.max(22, ctx.measureText(pStr).width + 10);
+                            const bh = 18;
+                            const bx = cx + CARD_W - bw;
+                            const by = cy;
+
+                            ctx.fillStyle = '#f9cb9c';
+                            ctx.fillRect(bx, by, bw, bh);
+                            ctx.strokeStyle = '#0f172a';
+                            ctx.lineWidth = 2;
+                            ctx.strokeRect(bx, by, bw, bh);
+
+                            ctx.fillStyle = '#0f172a';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(pStr, bx + bw / 2, by + bh / 2);
+                        }
+                        ctx.restore();
+                    });
+
+                    const totalRows = Math.ceil(cardsArr.length / COLS);
+                    curY += totalRows * CARD_H + Math.max(0, totalRows - 1) * GAP + 14;
+                };
+
+                drawCardGrid(expandedMain, `Main Deck [${mainCount}]`, '#38bdf8');
+                drawCardGrid(expandedExtra, `Extra Deck [${extraCount}]`, '#8b5cf6');
+            } else {
+                const COL_W = (CW - 12) / 2;
+                const drawTextColumn = (items, startX) => {
+                    items.forEach((c, idx) => {
+                        const ry = curY + idx * (ROW_H + ROW_GAP);
+                        const colors = getCardColors(c.rawType);
+
+                        drawRoundedRect(ctx, startX, ry, COL_W, ROW_H, 4);
+                        ctx.fillStyle = colors.bg === 'var(--text)' ? '#0b1120' : colors.bg;
+                        ctx.fill();
+                        ctx.lineWidth = 1;
+                        ctx.strokeStyle = '#334155';
+                        ctx.stroke();
+
+                        const textCol = colors.text === 'var(--text)' ? '#f8fafc' : colors.text;
+                        ctx.fillStyle = colors.controls || textCol;
+                        ctx.font = "bold 13px system-ui, sans-serif";
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(String(c.qty), startX + 16, ry + ROW_H / 2);
+
+                        ctx.fillStyle = textCol;
+                        ctx.font = "bold 14px 'Oswald', system-ui, sans-serif";
+                        ctx.textAlign = 'left';
+                        const maxNameW = COL_W - 72;
+                        let dispName = c.name;
+                        while (dispName.length > 3 && ctx.measureText(dispName).width > maxNameW) {
+                            dispName = dispName.slice(0, -2) + '…';
+                        }
+                        ctx.fillText(dispName, startX + 32, ry + ROW_H / 2);
+
+                        const sub = c.qty * c.pts;
+                        if (c.isMissing) {
+                            ctx.font = "15px system-ui, sans-serif";
+                            ctx.textAlign = 'center';
+                            ctx.fillText("🚫", startX + COL_W - 21, ry + ROW_H / 2);
+                        } else if (sub > 0) {
+                            const bx = startX + COL_W - 36;
+                            const by = ry + 4;
+                            drawRoundedRect(ctx, bx, by, 30, ROW_H - 8, 4);
+                            ctx.fillStyle = '#f9cb9c';
+                            ctx.fill();
+                            ctx.fillStyle = '#0f172a';
+                            ctx.font = "bold 13px system-ui, sans-serif";
+                            ctx.textAlign = 'center';
+                            ctx.fillText(String(sub), bx + 15, ry + ROW_H / 2);
+                        }
+                    });
+                };
+
+                drawTextColumn(orderedCards.slice(0, col1Count), PAD);
+                drawTextColumn(orderedCards.slice(col1Count), PAD + COL_W + 12);
+            }
+
+            statusEl.textContent = "";
             const image = canvas.toDataURL("image/png");
             const a = document.createElement('a');
             a.href = image;
-            a.download = isImageMode ? `GeNeRsys_Decklist_Images.png` : `GeNeRsys_Decklist.png`;
+            a.download = isImageMode ? `${exportBaseName}_Images.png` : `${exportBaseName}_Decklist.png`;
             document.body.appendChild(a);
             a.click();
             a.remove();
         } catch (err) {
             console.error("Screenshot failed", err);
-            document.getElementById('viewerStatus').textContent = "";
+            statusEl.textContent = "";
             alert("Failed to capture screenshot.");
         }
     }
